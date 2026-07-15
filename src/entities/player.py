@@ -1,3 +1,4 @@
+import os
 import pygame
 
 
@@ -5,15 +6,31 @@ class Player:
 
     def __init__(self):
 
+        # Position du joueur
         self.x = 400
         self.y = 300
 
-        self.width = 50
-        self.height = 30
-
+        # Vitesse
         self.speed = 5
 
-        self.color = (0, 255, 0)
+        # Chargement du sprite
+        current_dir = os.path.dirname(__file__)
+
+        image_path = os.path.join(
+            current_dir,
+            "/Users/Jules/Projects/space-fighters/assets/sprites/vaisseau_32.png"
+        )
+
+        self.image = pygame.image.load(image_path).convert_alpha()
+        
+        
+        self.image = pygame.transform.scale(
+           self.image,
+             (64, 64)
+        ) 
+        # Taille du sprite
+        self.width = self.image.get_width()
+        self.height = self.image.get_height()
 
     def update(self, keys):
 
@@ -31,8 +48,7 @@ class Player:
 
     def draw(self, screen):
 
-        pygame.draw.rect(
-            screen,
-            self.color,
-            (self.x, self.y, self.width, self.height)
+        screen.blit(
+            self.image,
+            (self.x, self.y)
         )
