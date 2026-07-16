@@ -1,9 +1,13 @@
-import random
 import pygame
 
 from entities.player import Player
-from entities.projectile import Projectile
-from entities.enemy import Enemy
+
+from managers.star_manager import StarManager
+from managers.projectile_manager import ProjectileManager
+from managers.explosion_manager import ExplosionManager
+from managers.enemy_manager import EnemyManager
+
+from systems.collision_system import CollisionSystem
 
 
 class Game:
@@ -21,19 +25,53 @@ class Game:
 
         self.clock = pygame.time.Clock()
 
+        self.font = pygame.font.SysFont("Arial", 28)
+
+        # --------------------------------------------------------------
+        # Joueur
+        # --------------------------------------------------------------
+
         self.player = Player()
 
-        self.projectiles = []
-        self.enemies = []
+        # --------------------------------------------------------------
+        # Managers
+        # --------------------------------------------------------------
+
+        self.star_manager = StarManager(
+            self.WIDTH,
+            self.HEIGHT
+        )
+
+        self.projectile_manager = ProjectileManager()
+
+        self.enemy_manager = EnemyManager(
+            self.WIDTH,
+            self.HEIGHT
+        )
+
+        self.explosion_manager = ExplosionManager()
+
+        # --------------------------------------------------------------
+        # Systems
+        # --------------------------------------------------------------
+
+        self.collision_system = CollisionSystem()
+
+        # --------------------------------------------------------------
+        # Gameplay
+        # --------------------------------------------------------------
 
         self.running = True
 
-        self.enemy_spawn_timer = 0
-        self.enemy_spawn_delay = 120
+        self.score = 0
 
     def run(self):
 
         while self.running:
+
+            # ==========================================================
+            # Gestion des événements
+            # ==========================================================
 
             for event in pygame.event.get():
 
@@ -44,113 +82,90 @@ class Game:
 
                     if event.key == pygame.K_SPACE:
 
-                        projectile = Projectile(
+                        self.projectile_manager.fire(
                             self.player.x + self.player.width,
                             self.player.y + self.player.height // 2
                         )
 
-                        self.projectiles.append(projectile)
+            # ==========================================================
+            # Lecture clavier
+            # ==========================================================
 
             keys = pygame.key.get_pressed()
 
             self.player.update(keys)
 
+            # Limites du joueur
+
             self.player.x = max(
                 0,
-                min(self.player.x, self.WIDTH - self.player.width)
+                min(
+                    self.player.x,
+                    self.WIDTH - self.player.width
+                )
             )
 
             self.player.y = max(
                 0,
-                min(self.player.y, self.HEIGHT - self.player.height)
+                min(
+                    self.player.y,
+                    self.HEIGHT - self.player.height
+                )
             )
 
-            # --------- Apparition ennemis ---------
+            # ==========================================================
+            # Update
+            # ==========================================================
 
-            self.enemy_spawn_timer += 1
+            self.star_manager.update()
 
-            if self.enemy_spawn_timer >= self.enemy_spawn_delay:
+            self.projectile_manager.update()
 
-                enemy = Enemy(
-                    self.WIDTH,
-                    random.randint(0, self.HEIGHT - 40)
-                )
+            self.enemy_manager.spawn()
+            self.enemy_manager.update()
 
-                self.enemies.append(enemy)
+            self.explosion_manager.update()
 
-                self.enemy_spawn_timer = 0
+            destroyed_enemies = self.collision_system.update(
+                self.player,
+                self.projectile_manager,
+                self.enemy_manager,
+                self.explosion_manager
+            )
 
-            # --------- Update ---------
+            for enemy in destroyed_enemies:
+                self.score += enemy.score
 
-            for projectile in self.projectiles:
-                projectile.update()
+            self.projectile_manager.clean(self.WIDTH)
+            self.enemy_manager.clean()
+            self.explosion_manager.clean()
 
-            for enemy in self.enemies:
-                enemy.update()
-
-            # ------------------------------------------------------------------
-            # Gestion des collisions entre les projectiles et les ennemis
-            # ------------------------------------------------------------------
-
-            projectiles_to_remove = []
-            enemies_to_remove = []
-
-            for projectile in self.projectiles:
-
-                projectile_rect = pygame.Rect(
-                    projectile.x,
-                    projectile.y,
-                    projectile.width,
-                    projectile.height
-                )
-
-                for enemy in self.enemies:
-
-                    enemy_rect = pygame.Rect(
-                        enemy.x,
-                        enemy.y,
-                        enemy.width,
-                        enemy.height
-                    )
-
-                    if projectile_rect.colliderect(enemy_rect):
-
-                        projectiles_to_remove.append(projectile)
-                        enemies_to_remove.append(enemy)
-
-            # ------------------------------------------------------------------
-            # Suppression des objets détruits et hors écran
-            # ------------------------------------------------------------------
-
-            self.projectiles = [
-                projectile
-                for projectile in self.projectiles
-                if (
-                    projectile not in projectiles_to_remove
-                    and not projectile.is_outside_screen(self.WIDTH)
-                )
-            ]
-
-            self.enemies = [
-                enemy
-                for enemy in self.enemies
-                if (
-                    enemy not in enemies_to_remove
-                    and not enemy.is_outside_screen()
-                )
-            ]
-
-            # --------- Draw ---------
+            # ==========================================================
+            # Draw
+            # ==========================================================
 
             self.screen.fill((0, 0, 0))
 
+            self.star_manager.draw(self.screen)
+
             self.player.draw(self.screen)
 
-            for projectile in self.projectiles:
-                projectile.draw(self.screen)
+            self.projectile_manager.draw(self.screen)
 
-            for enemy in self.enemies:
-                enemy.draw(self.screen)
+            self.enemy_manager.draw(self.screen)
+
+            self.explosion_manager.draw(self.screen)
+
+            score_text = self.font.render(
+                f"Score : {self.score}",
+                True,
+                (255, 255, 255)
+            )
+
+            self.screen.blit(
+                score_text,
+                (20, 20)
+            )
 
             pygame.display.flip()
 
