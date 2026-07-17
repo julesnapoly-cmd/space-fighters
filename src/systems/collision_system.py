@@ -60,6 +60,8 @@ class CollisionSystem:
             player.height
         )
 
+      
+
         for enemy in enemy_manager.get_enemies()[:]:
 
             enemy_rect = pygame.Rect(
@@ -71,6 +73,7 @@ class CollisionSystem:
 
             if player_rect.colliderect(enemy_rect):
 
+                player.take_damage()
                 enemy_manager.remove(enemy)
 
                 explosion_manager.create(

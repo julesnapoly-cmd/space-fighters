@@ -1,63 +1,65 @@
 import random
+import pygame
 
-from entities.enemy import Enemy
+from entities.basic_enemy import BasicEnemy
+from entities.fast_enemy import FastEnemy
 
 
 class EnemyManager:
 
     def __init__(self, screen_width, screen_height):
 
+        self.enemies = []
+
         self.screen_width = screen_width
         self.screen_height = screen_height
 
-        self.enemies = []
+        self.spawn_delay = 1200
+        self.last_spawn = 0
 
-        self.spawn_timer = 0
-        self.spawn_delay = 90
+        # Types d'ennemis disponibles
+        self.enemy_types = [
+            BasicEnemy,
+            FastEnemy
+        ]
 
-    # ------------------------------------------------------------------
-    # Apparition des ennemis
-    # ------------------------------------------------------------------
+    def spawn_enemy(self, enemy):
 
-    def spawn(self):
+        self.enemies.append(enemy)
 
-        self.spawn_timer += 1
+    def spawn_random(self):
 
-        if self.spawn_timer >= self.spawn_delay:
+        current_time = pygame.time.get_ticks()
 
-            self.enemies.append(
-                Enemy(
-                    self.screen_width,
-                    random.randint(
-                        0,
-                        self.screen_height - 40
-                    )
+        if current_time - self.last_spawn >= self.spawn_delay:
+
+            enemy_class = random.choice(self.enemy_types)
+
+            enemy = enemy_class(
+                self.screen_width,
+                random.randint(
+                    0,
+                    self.screen_height - 96
                 )
             )
 
-            self.spawn_timer = 0
+            self.spawn_enemy(enemy)
 
-    # ------------------------------------------------------------------
-    # Mise à jour
-    # ------------------------------------------------------------------
+            self.last_spawn = current_time
 
+    def get_enemies(self):
+
+        return self.enemies
+
+    def remove(self, enemy):
+
+        if enemy in self.enemies:
+            self.enemies.remove(enemy)
+            
     def update(self):
 
         for enemy in self.enemies:
             enemy.update()
-
-    # ------------------------------------------------------------------
-    # Dessin
-    # ------------------------------------------------------------------
-
-    def draw(self, screen):
-
-        for enemy in self.enemies:
-            enemy.draw(screen)
-
-    # ------------------------------------------------------------------
-    # Suppression des ennemis hors écran
-    # ------------------------------------------------------------------
 
     def clean(self):
 
@@ -67,20 +69,7 @@ class EnemyManager:
             if not enemy.is_outside_screen()
         ]
 
-    
-    # ------------------------------------------------------------------
-    # Suppression d'un ennemi
-    # ------------------------------------------------------------------
+    def draw(self, screen):
 
-    def remove(self, enemy):
-
-        if enemy in self.enemies:
-            self.enemies.remove(enemy)
-    # ------------------------------------------------------------------
-    # Accès à la liste
-    # ------------------------------------------------------------------
-    
-
-    def get_enemies(self):
-
-        return self.enemies
+        for enemy in self.enemies:
+            enemy.draw(screen)

@@ -25,7 +25,7 @@ class Explosion:
 
         image_path = os.path.join(
             current_dir,
-            "/Users/Jules/Projects/space-fighters/assets/sprites/sprite-explosion-soucoupe.png"
+            "/Users/Jules/Projects/space-fighters/assets/sprites/effects/sprite-explosion-soucoupe.png"
         )
 
         self.original_image = pygame.image.load(image_path).convert_alpha()
